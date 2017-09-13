@@ -1,7 +1,3 @@
-// require('isomorphic-fetch')
-
-// const { AwsSigner } = require('aws-sign-web')
-
 const crypto = require('crypto')
 const parseUrl = require('url').parse
 const qs = require('querystring')
@@ -11,7 +7,14 @@ const traverse = require('traverse')
 const DataURI = require('strong-data-uri')
 const decodeDataURI = DataURI.decode
 const encodeDataURI = DataURI.encode
-const S3_URL_REGEX = /^(?:https?|s3):\/\/([^.]+)\.s3\.amazonaws.com\/(.*)/
+const PREFIX = {
+  // same length
+  presigned: 'p:s3:',
+  unsigned: 'u:s3:'
+}
+
+// const AWS_HOSTNAME_REGEX = /\.amazonaws\.com$/
+const S3_URL_REGEX = /^(?:https?|s3):\/\/([^.]+)\.s3\.amazonaws.com\/([^?]*)/
 const DEFAULT_REGION = 'us-east-1'
 const S3_ENDPOINTS = {
   'us-east-1': 's3.amazonaws.com',
@@ -38,14 +41,6 @@ function getS3Endpoint (region) {
 function parseS3Url (url) {
   if (!/^https?:/.test(url)) return
 
-  const match = url.match(S3_URL_REGEX)
-  if (match) {
-    return {
-      bucket: match[1],
-      key: match[2]
-    }
-  }
-
   let parsed
   try {
     parsed = parseUrl(url)
@@ -53,24 +48,49 @@ function parseS3Url (url) {
     return
   }
 
-  if (parsed.hostname !== 'localhost') {
-    const {
-      AWSAccessKeyId,
-      Expires,
-      Signature
-    } = qs.parse(parsed.query || '')
+  const query = qs.parse(parsed.query || '')
+  const {
+    AWSAccessKeyId,
+    Expires,
+    Signature
+  } = query
 
-    if (!(AWSAccessKeyId && Expires && Signature)) {
-      return
-    }
-  }
+  const presigned = AWSAccessKeyId && Expires && Signature
+  // if (parsed.hostname !== 'localhost' && !presigned) {
+  //   return
+  // }
 
-  const [unusedVar, bucket, key] = parsed.pathname.match(/^\/?([^/]+)\/(.*)/)
-  return {
+  const ret = {
     url,
-    bucket,
-    key
+    query,
+    host: parsed.host
   }
+
+  const match = url.match(S3_URL_REGEX)
+  if (presigned) {
+    ret.presigned = true
+  }
+
+  if (match) {
+    ret.bucket = match[1]
+    ret.key = match[2]
+  } else {
+    const [unusedVar, bucket, key] = parsed.pathname.match(/^\/?([^/]+)\/(.*)/)
+    if (!(bucket && key)) return
+
+    ret.bucket = bucket
+    ret.key = key
+  }
+
+  return ret
+  // return {
+  //   url,
+  //   host: parsed.host,
+  //   query,
+  //   bucket,
+  //   key,
+  //   presigned: !!presigned
+  // }
 }
 
 function sha256 (strOrBuffer) {
@@ -125,7 +145,7 @@ function replaceDataUrls ({
       key
     })
 
-    this.update(s3Url)
+    this.update(PREFIX.unsigned + s3Url)
     return replacements
   }, [])
 }
@@ -134,7 +154,7 @@ const resolveEmbeds = co(function* ({ object, resolve }) {
   const embeds = getEmbeds(object)
   if (!embeds.length) return object
 
-  const values = yield embeds.map(resolve)
+  const values = yield embeds.map(embed => resolve(embed))
   embeds.forEach(({ path }, i) => {
     const value = values[i]
     const dataUri = encodeDataURI(value, value.mimetype)
@@ -144,25 +164,81 @@ const resolveEmbeds = co(function* ({ object, resolve }) {
   return object
 })
 
+// function replaceEmbeds (object, fn) {
+//   const promises = []
+//   return new Promise((resolve, reject) => {
+//     traverse(object).reduce(function (embeds, value) {
+//       const embed = parseEmbeddedValue.call(this, value)
+//       const replacement = fn(embed)
+//       if (isPromise(replacement)) {
+//         promises.push(
+//           replacement.then(result => this.update(result))
+//         )
+//       } else {
+//         this.update(replacement)
+//       }
+//     })
+
+//     Promise.all(promises).then(() => resolve(object), reject)
+//   })
+// }
+
+function parseEmbeddedValue (value) {
+  if (!(this.isLeaf && typeof value === 'string')) {
+    return
+  }
+
+  let prefix
+  let presigned
+  if (value.startsWith(PREFIX.presigned)) {
+    prefix = PREFIX.presigned
+  } else if (value.startsWith(PREFIX.unsigned)) {
+    prefix = PREFIX.unsigned
+  } else {
+    return
+  }
+
+  const embed = parseS3Url(value.slice(prefix.length))
+  if (embed) {
+    embed.path = this.path.join('.')
+    return embed
+  }
+}
+
 function getEmbeds (object) {
-  return traverse(object).reduce(function (replacements, value) {
-    const embed = typeof value === 'string' && parseS3Url(value)
+  return traverse(object).reduce(function (embeds, value) {
+    const embed = parseEmbeddedValue.call(this, value)
     if (embed) {
-      embed.url = value
-      embed.path = this.path.join('.')
-      replacements.push(embed)
+      embeds.push(embed)
     }
 
-    return replacements
+    return embeds
   }, [])
+}
+
+function presignUrls ({ object, sign }) {
+  const embeds = getEmbeds(object)
+  embeds.forEach(({ bucket, key, path }) => {
+    const url = sign({ bucket, key, path })
+    dotProp.set(object, path, PREFIX.presigned + url)
+  })
+
+  return object
+}
+
+function isPromise (obj) {
+  return obj && typeof obj.then === 'function'
 }
 
 const utils = module.exports = {
   parseS3Url,
   getS3Endpoint,
   replaceDataUrls,
+  presignUrls,
+  // replaceEmbeds,
   resolveEmbeds,
   getEmbeds,
   encodeDataURI,
-  decodeDataURI
+  decodeDataURI,
+  PREFIX
 }
