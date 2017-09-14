@@ -30,7 +30,6 @@ test('replace data urls', function (t) {
   const photo = `${PREFIX.unsigned}https://${bucket}.s3.amazonaws.com/${keyPrefix}${hash1}`
   const gooblae = `${PREFIX.unsigned}https://${bucket}.s3.amazonaws.com/${keyPrefix}${hash2}`
   const dataUrls = replaceDataUrls({
-    host: `${bucket}.s3.amazonaws.com`,
     bucket,
     keyPrefix,
     object: message

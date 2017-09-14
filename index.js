@@ -104,6 +104,10 @@ function replaceDataUrls ({
   bucket,
   keyPrefix
 }) {
+  if (!host) {
+    host = `${bucket}.${getS3Endpoint(region)}`
+  }
+
   return traverse(object).reduce(function (replacements, value) {
     if (!this.isLeaf ||
       typeof value !== 'string' ||
@@ -122,22 +126,20 @@ function replaceDataUrls ({
 
     const hash = sha256(body)
     const key = keyPrefix + hash
-    let protocol, s3Host, s3Url
+    let protocol, s3Url
     if (host.startsWith('localhost:')) {
       protocol = 'http:'
-      s3Host = host
-      s3Url = `${protocol}//${s3Host}/${bucket}/${key}`
+      s3Url = `${protocol}//${host}/${bucket}/${key}`
     } else {
       protocol = 'https:'
-      s3Host = `${bucket}.${getS3Endpoint(region)}`
-      s3Url = `${protocol}//${s3Host}/${key}`
+      s3Url = `${protocol}//${host}/${key}`
     }
 
     replacements.push({
       dataUrl: value,
       hash,
       body,
-      host: s3Host,
+      host,
       mimetype: body.mimetype,
       path: this.path.join('.'),
       s3Url,
