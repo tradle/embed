@@ -113,8 +113,12 @@ function replaceDataUrls ({
   host,
   object,
   bucket,
-  keyPrefix
+  keyPrefix=''
 }) {
+  if (!bucket) {
+    throw new Error('"bucket" is required')
+  }
+
   if (!host) {
     host = `${bucket}.${getS3Endpoint(region)}`
   }
