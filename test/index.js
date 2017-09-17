@@ -8,7 +8,8 @@ const {
   getUnsignedEmbeds,
   encodeDataURI,
   decodeDataURI,
-  PREFIX
+  PREFIX,
+  stripEmbedPrefix
 } = require('../')
 
 test('replace data urls', function (t) {
@@ -118,6 +119,33 @@ test('replace data urls', function (t) {
       path: "object.gooblae",
     }
   ])
+
+  t.end()
+})
+
+test('stripEmbedPrefix', function (t) {
+  const bucket = 'mybucket'
+  const keyPrefix = 'mykeyprefix'
+  const hash = 'abc'
+  t.same(stripEmbedPrefix({
+    a: {
+      b: {
+        c: `${PREFIX.unsigned}https://${bucket}.s3.amazonaws.com/${keyPrefix}${hash}`
+      },
+      d: {
+        e: `${PREFIX.presigned}https://${bucket}.s3.amazonaws.com/${keyPrefix}${hash}`
+      }
+    }
+  }), {
+    a: {
+      b: {
+        c: `https://${bucket}.s3.amazonaws.com/${keyPrefix}${hash}`,
+      },
+      d: {
+        e: `https://${bucket}.s3.amazonaws.com/${keyPrefix}${hash}`,
+      }
+    }
+  })
 
   t.end()
 })

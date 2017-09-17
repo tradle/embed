@@ -97,6 +97,17 @@ function sha256 (strOrBuffer) {
   return crypto.createHash('sha256').update(strOrBuffer).digest('hex')
 }
 
+function stripEmbedPrefix (object) {
+  traverse(object).reduce(function (embeds, value) {
+    const embed = parseEmbeddedValue.call(this, value)
+    if (embed) {
+      this.update(embed.url)
+    }
+  })
+
+  return object
+}
+
 function replaceDataUrls ({
   region=DEFAULT_REGION,
   host,
@@ -242,5 +253,6 @@ const utils = module.exports = {
   getEmbeds,
   encodeDataURI,
   decodeDataURI,
+  stripEmbedPrefix,
   PREFIX
 }
