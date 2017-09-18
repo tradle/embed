@@ -75,7 +75,11 @@ function parseS3Url (url) {
     ret.bucket = match[1]
     ret.key = match[2]
   } else {
-    const [unusedVar, bucket, key] = parsed.pathname.match(/^\/?([^/]+)\/(.*)/)
+    const { pathname='' } = parsed
+    const match = pathname.match(/^\/?([^/]+)\/(.*)/)
+    if (!match) return
+
+    const [bucket, key] = match.slice(1)
     if (!(bucket && key)) return
 
     ret.bucket = bucket
@@ -110,7 +114,7 @@ function stripEmbedPrefix (object) {
 
 function replaceDataUrls ({
   region=DEFAULT_REGION,
-  host,
+  endpoint,
   object,
   bucket,
   keyPrefix=''
@@ -119,8 +123,8 @@ function replaceDataUrls ({
     throw new Error('"bucket" is required')
   }
 
-  if (!host) {
-    host = `${bucket}.${getS3Endpoint(region)}`
+  if (!endpoint) {
+    endpoint = getS3Endpoint(region)
   }
 
   return traverse(object).reduce(function (replacements, value) {
@@ -141,12 +145,13 @@ function replaceDataUrls ({
 
     const hash = sha256(body)
     const key = keyPrefix + hash
-    let protocol, s3Url
-    if (host.startsWith('localhost:')) {
+    let protocol, host, s3Url
+    if (endpoint.startsWith('localhost:')) {
       protocol = 'http:'
-      s3Url = `${protocol}//${host}/${bucket}/${key}`
+      s3Url = `${protocol}//${endpoint}/${bucket}/${key}`
     } else {
       protocol = 'https:'
+      host = `${bucket}.${endpoint}`
       s3Url = `${protocol}//${host}/${key}`
     }
 
