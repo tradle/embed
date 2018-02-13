@@ -80,7 +80,8 @@ test('replace data urls', function (t) {
       query: {},
       bucket,
       key: `${keyPrefix}${hash1}`,
-      path: "object.blah.habla.0.photo"
+      path: "object.blah.habla.0.photo",
+      value: `${PREFIX.unsigned}https://${bucket}.s3.amazonaws.com/${keyPrefix}${hash1}`
     },
     {
       url: `https://${bucket}.s3.amazonaws.com/${keyPrefix}${hash2}`,
@@ -88,7 +89,8 @@ test('replace data urls', function (t) {
       query: {},
       bucket,
       key: `${keyPrefix}${hash2}`,
-      path: "object.gooblae"
+      path: "object.gooblae",
+      value: `${PREFIX.unsigned}https://${bucket}.s3.amazonaws.com/${keyPrefix}${hash2}`
     }
   ])
 
@@ -103,7 +105,8 @@ test('replace data urls', function (t) {
       host: `${bucket}.s3.amazonaws.com`,
       bucket,
       key: `${keyPrefix}${hash1}`,
-      path: "object.blah.habla.0.photo"
+      path: "object.blah.habla.0.photo",
+      value: `${PREFIX.unsigned}https://${bucket}.s3.amazonaws.com/${keyPrefix}${hash1}`
     },
     {
       url: `https://${bucket}.s3.amazonaws.com/${keyPrefix}${hash2}?${querystring}`,
@@ -117,6 +120,7 @@ test('replace data urls', function (t) {
       bucket,
       key: `${keyPrefix}${hash2}`,
       path: "object.gooblae",
+      value: message.object.gooblae
     }
   ])
 
