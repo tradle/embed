@@ -13,6 +13,7 @@
   "dependencies": {
     "co": "^4.6.0",
     "dot-prop": "^4.2.0",
+    "ip": "^1.1.5",
     "strong-data-uri": "^1.0.4",
     "traverse": "^0.6.6"
   },

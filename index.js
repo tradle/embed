@@ -2,6 +2,7 @@ const crypto = require('crypto')
 const parseUrl = require('url').parse
 const qs = require('querystring')
 const co = require('co').wrap
+const IP = require('ip')
 const dotProp = require('dot-prop')
 const traverse = require('traverse')
 const DataURI = require('strong-data-uri')
@@ -146,7 +147,7 @@ function replaceDataUrls ({
     const hash = sha256(body)
     const key = keyPrefix + hash
     let protocol, host, s3Url
-    if (endpoint.startsWith('localhost:')) {
+    if (isPrivateEndpoint(endpoint)) {
       protocol = 'http:'
       s3Url = `${protocol}//${endpoint}/${bucket}/${key}`
     } else {
@@ -253,6 +254,14 @@ function isPromise (obj) {
   return obj && typeof obj.then === 'function'
 }
 
+function isPrivateEndpoint (endpoint) {
+  const host = endpoint
+    .replace(/^https?:\/\//, '')
+    .split(':')[0]
+
+  return host === 'localhost' || IP.isPrivate(host)
+}
+
 const utils = module.exports = {
   parseS3Url,
   getS3Endpoint,
@@ -264,5 +273,6 @@ const utils = module.exports = {
   encodeDataURI,
   decodeDataURI,
   stripEmbedPrefix,
-  PREFIX
+  PREFIX,
+  isPrivateEndpoint
 }
