@@ -223,8 +223,8 @@ function parseEmbeddedValue (value) {
   }
 
   const embed = parseS3Url(value.slice(prefix.length))
-  embed.value = value
   if (embed) {
+    embed.value = value
     embed.path = this.path.join('.')
     return embed
   }
