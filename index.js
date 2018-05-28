@@ -1,7 +1,6 @@
 const crypto = require('crypto')
 const parseUrl = require('url').parse
 const qs = require('querystring')
-const Promise = require('bluebird')
 const co = require('co').wrap
 const IP = require('ip')
 const dotProp = require('dot-prop')
@@ -178,7 +177,7 @@ const resolveEmbeds = co(function* ({ object, resolve, concurrency=Infinity }) {
   const embeds = getEmbeds(object)
   if (!embeds.length) return object
 
-  const values = yield Promise.map(embeds, embed => resolve(embed), { concurrency })
+  const values = yield Promise.all(embeds.map(embed => resolve(embed), { concurrency }))
   embeds.forEach(({ path }, i) => {
     const value = values[i]
     const dataUri = encodeDataURI(value, value.mimetype)
