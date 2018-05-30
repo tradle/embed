@@ -15,7 +15,7 @@ const PREFIX = {
 }
 
 // const AWS_HOSTNAME_REGEX = /\.amazonaws\.com$/
-const S3_URL_REGEX = /^(?:https?|s3):\/\/([^.]+)\.s3[^.]*?\.amazonaws.com\/([^?]*)/
+const S3_URL_REGEX = /^(?:https?|s3):\/\/([^.]+)\.s3.*?\.amazonaws.com\/([^?]*)/
 const DEFAULT_REGION = 'us-east-1'
 const S3_ENDPOINTS = {
   'us-east-1': 's3.amazonaws.com',
