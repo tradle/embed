@@ -250,7 +250,7 @@ function parseKeeperUri (uri) {
 
 function buildKeeperUri ({ hash, algorithm, mimetype }) {
   const qs = QueryString.stringify({ algorithm, mimetype })
-  return `${PROTOCOL.keeper}//${hash}?${qs}`
+  return `${PROTOCOL.keeper}//${hash}/?${qs}`
 }
 
 function isKeeperUri (uri) {

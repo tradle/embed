@@ -166,7 +166,7 @@ test('build/parse/is/replaceKeeperUris', t => {
   const mimetype = 'image/jpeg'
   const algorithm = 'sha256'
   const qs = QueryString.stringify({ algorithm, mimetype })
-  const keeperUri = `${PROTOCOL.keeper}//${hash}?${qs}`
+  const keeperUri = `${PROTOCOL.keeper}//${hash}/?${qs}`
   t.equal(isKeeperUri(keeperUri), true)
   t.equal(isKeeperUri('https://keeper.com'), false)
   t.same(keeperUri, buildKeeperUri({ hash, algorithm, mimetype }))
