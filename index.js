@@ -146,16 +146,7 @@ function replaceDataUrls ({
 
     const hash = sha256(body)
     const key = keyPrefix + hash
-    let protocol, host, s3Url
-    if (isPrivateEndpoint(endpoint)) {
-      protocol = 'http:'
-      s3Url = `${protocol}//${endpoint}/${bucket}/${key}`
-    } else {
-      protocol = 'https:'
-      host = `${bucket}.${endpoint}`
-      s3Url = `${protocol}//${host}/${key}`
-    }
-
+    const { host, s3Url } = getS3UploadTarget({ endpoint, key, bucket })
     replacements.push({
       dataUrl: value,
       hash,
@@ -262,6 +253,21 @@ function isPrivateEndpoint (endpoint) {
   return host === 'localhost' || IP.isPrivate(host)
 }
 
+function getS3UploadTarget ({ endpoint, key, bucket }) {
+  if (isPrivateEndpoint(endpoint)) {
+    return {
+      host: endpoint,
+      s3Url: `http://${endpoint}/${bucket}/${key}`,
+    }
+  }
+
+  const host = `${bucket}.${endpoint}`
+  return {
+    host,
+    s3Url: `https://${host}/${key}`,
+  }
+}
+
 const utils = module.exports = {
   parseS3Url,
   getS3Endpoint,
@@ -274,5 +280,6 @@ const utils = module.exports = {
   decodeDataURI,
   stripEmbedPrefix,
   PREFIX,
-  isPrivateEndpoint
+  isPrivateEndpoint,
+  getS3UploadTarget,
 }
