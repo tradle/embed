@@ -238,11 +238,17 @@ const resolveEmbeds = co(function* ({ object, resolve, concurrency=Infinity }) {
 // }
 
 function parseKeeperUri (uri) {
-  const { hostname, query } = parseUrl(uri)
-  const { algorithm, mimetype } = QueryString.parse(query)
+  // parseUrl doesn't work. It cuts off the last character of the hash when parsing
+  // hash as hostname
+  const [hash, rest] = uri
+    .slice(PROTOCOL.keeper.length + 2)
+    .split('/')
+
+  const qs = rest.split('?')[1] || ''
+  const { algorithm, mimetype } = QueryString.parse(qs)
   return {
     type: 'tradle-keeper',
-    hash: hostname,
+    hash,
     algorithm,
     mimetype,
   }
