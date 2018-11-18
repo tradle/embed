@@ -1,7 +1,13 @@
 const test = require('tape')
+const QueryString = require('querystring')
 const {
   parseS3Url,
+  isKeeperUri,
+  buildKeeperUri,
+  parseKeeperUri,
+  getS3UrlForKeeperUri,
   getS3Endpoint,
+  replaceKeeperUris,
   replaceDataUrls,
   getEmbeds,
   resolveEmbeds,
@@ -9,7 +15,8 @@ const {
   encodeDataURI,
   decodeDataURI,
   PREFIX,
-  stripEmbedPrefix
+  PROTOCOL,
+  stripEmbedPrefix,
 } = require('../')
 
 test('replace data urls', function (t) {
@@ -150,6 +157,67 @@ test('stripEmbedPrefix', function (t) {
       }
     }
   })
+
+  t.end()
+})
+
+test('build/parse/is/replaceKeeperUris', t => {
+  const hash = 'deadbeef'
+  const mimetype = 'image/jpeg'
+  const algorithm = 'sha256'
+  const qs = QueryString.stringify({ algorithm, mimetype })
+  const keeperUri = `${PROTOCOL.keeper}//${hash}?${qs}`
+  t.equal(isKeeperUri(keeperUri), true)
+  t.equal(isKeeperUri('https://keeper.com'), false)
+  t.same(keeperUri, buildKeeperUri({ hash, algorithm, mimetype }))
+  t.same(parseKeeperUri(keeperUri), {
+    type: 'tradle-keeper',
+    hash,
+    algorithm,
+    mimetype,
+  })
+
+  const region = 'us-west-2'
+  const bucket = 'abc.def'
+  const keyPrefix = 'bloob/'
+  const commonOpts = {
+    keyPrefix,
+    region,
+    bucket,
+  }
+
+  t.equal(getS3UrlForKeeperUri({
+    ...commonOpts,
+    uri: keeperUri,
+  }), 'https://abc.def.s3-us-west-2.amazonaws.com/bloob/deadbeef');
+
+  const message = {
+    object: {
+      blah: {
+        habla: [{
+          photo: keeperUri
+        }]
+      },
+      gooblae: "data:image/jpeg;base64,/8j/4AAQSkZJRgABAQAAAQABAAD"
+    }
+  }
+
+  t.same(replaceKeeperUris({
+    ...commonOpts,
+    object: message
+  }), [
+    {
+      type: "tradle-keeper",
+      hash,
+      algorithm,
+      mimetype,
+      host: `${bucket}.s3-us-west-2.amazonaws.com`,
+      path: 'object.blah.habla.0.photo',
+      s3Url: `https://${bucket}.s3-us-west-2.amazonaws.com/${keyPrefix}${hash}`,
+      bucket,
+      key: `${keyPrefix}${hash}`
+    }
+  ])
 
   t.end()
 })

@@ -1,6 +1,6 @@
 const crypto = require('crypto')
 const parseUrl = require('url').parse
-const qs = require('querystring')
+const QueryString = require('querystring')
 const co = require('co').wrap
 const IP = require('ip')
 const dotProp = require('dot-prop')
@@ -11,7 +11,15 @@ const encodeDataURI = DataURI.encode
 const PREFIX = {
   // same length
   presigned: 'p:s3:',
-  unsigned: 'u:s3:'
+  unsigned: 'u:s3:',
+}
+
+const PROTOCOL = {
+  // same length
+  http: 'http:',
+  https: 'https:',
+  keeper: 'tradle-keeper:',
+  dataUrl: 'data:',
 }
 
 // const AWS_HOSTNAME_REGEX = /\.amazonaws\.com$/
@@ -49,7 +57,7 @@ function parseS3Url (url) {
     return
   }
 
-  const query = qs.parse(parsed.query || '')
+  const query = QueryString.parse(parsed.query || '')
   const {
     AWSAccessKeyId,
     Expires,
@@ -113,17 +121,13 @@ function stripEmbedPrefix (object) {
   return object
 }
 
-function replaceDataUrls ({
+function replaceKeeperUris ({
   region=DEFAULT_REGION,
   endpoint,
   object,
   bucket,
   keyPrefix=''
 }) {
-  if (!bucket) {
-    throw new Error('"bucket" is required')
-  }
-
   if (!endpoint) {
     endpoint = getS3Endpoint(region)
   }
@@ -131,7 +135,43 @@ function replaceDataUrls ({
   return traverse(object).reduce(function (replacements, value) {
     if (!this.isLeaf ||
       typeof value !== 'string' ||
-      !value.startsWith('data:')
+      !isKeeperUri(value)
+    ) {
+      return replacements
+    }
+
+    const parsed = parseKeeperUri(value)
+    const key = keyPrefix + parsed.hash
+    const { host, s3Url } = getS3UploadTarget({ endpoint, key, bucket })
+    replacements.push({
+      ...parsed,
+      host,
+      path: this.path.join('.'),
+      s3Url,
+      bucket,
+      key,
+    })
+
+    this.update(PREFIX.unsigned + s3Url)
+    return replacements
+  }, [])
+}
+
+function replaceDataUrls ({
+  region=DEFAULT_REGION,
+  endpoint,
+  object,
+  bucket,
+  keyPrefix=''
+}) {
+  if (!endpoint) {
+    endpoint = getS3Endpoint(region)
+  }
+
+  return traverse(object).reduce(function (replacements, value) {
+    if (!this.isLeaf ||
+      typeof value !== 'string' ||
+      !value.startsWith(PROTOCOL.dataUrl)
     ) {
       return replacements
     }
@@ -197,6 +237,26 @@ const resolveEmbeds = co(function* ({ object, resolve, concurrency=Infinity }) {
 //   })
 // }
 
+function parseKeeperUri (uri) {
+  const { hostname, query } = parseUrl(uri)
+  const { algorithm, mimetype } = QueryString.parse(query)
+  return {
+    type: 'tradle-keeper',
+    hash: hostname,
+    algorithm,
+    mimetype,
+  }
+}
+
+function buildKeeperUri ({ hash, algorithm, mimetype }) {
+  const qs = QueryString.stringify({ algorithm, mimetype })
+  return `${PROTOCOL.keeper}//${hash}?${qs}`
+}
+
+function isKeeperUri (uri) {
+  return uri.startsWith(PROTOCOL.keeper + '//')
+}
+
 function parseEmbeddedValue (value) {
   if (!(this.isLeaf && typeof value === 'string')) {
     return
@@ -254,6 +314,10 @@ function isPrivateEndpoint (endpoint) {
 }
 
 function getS3UploadTarget ({ endpoint, key, bucket }) {
+  if (!bucket) {
+    throw new Error('"bucket" is required')
+  }
+
   if (isPrivateEndpoint(endpoint)) {
     return {
       host: endpoint,
@@ -268,6 +332,27 @@ function getS3UploadTarget ({ endpoint, key, bucket }) {
   }
 }
 
+function getS3UrlForKeeperUri ({
+  region=DEFAULT_REGION,
+  endpoint,
+  bucket,
+  keyPrefix='',
+  uri,
+}) {
+  if (!endpoint) {
+    endpoint = getS3Endpoint(region)
+  }
+
+  const { hash } = parseKeeperUri(uri)
+  const { s3Url } = getS3UploadTarget({
+    key: keyPrefix + hash,
+    bucket,
+    endpoint,
+  })
+
+  return s3Url
+}
+
 const utils = module.exports = {
   parseS3Url,
   getS3Endpoint,
@@ -280,6 +365,13 @@ const utils = module.exports = {
   decodeDataURI,
   stripEmbedPrefix,
   PREFIX,
+  PROTOCOL,
   isPrivateEndpoint,
   getS3UploadTarget,
+  buildKeeperUri,
+  parseKeeperUri,
+  parseEmbeddedValue,
+  isKeeperUri,
+  getS3UrlForKeeperUri,
+  replaceKeeperUris,
 }
