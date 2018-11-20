@@ -245,17 +245,15 @@ function parseKeeperUri (uri) {
     .split('/')
 
   const qs = rest.split('?')[1] || ''
-  const { algorithm, mimetype } = QueryString.parse(qs)
   return {
     type: 'tradle-keeper',
     hash,
-    algorithm,
-    mimetype,
+    ...QueryString.parse(qs),
   }
 }
 
-function buildKeeperUri ({ hash, algorithm, mimetype }) {
-  const qs = QueryString.stringify({ algorithm, mimetype })
+function buildKeeperUri ({ hash, ...details }) {
+  const qs = QueryString.stringify(details)
   return `${PROTOCOL.keeper}//${hash}/?${qs}`
 }
 
