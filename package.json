@@ -1,6 +1,6 @@
 {
   "name": "@tradle/embed",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "description": "utils for replacing, extracting and resolving media embedded in tradle objects",
   "main": "index.js",
   "keywords": [],
