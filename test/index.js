@@ -219,5 +219,17 @@ test('build/parse/is/replaceKeeperUris', t => {
     }
   ])
 
+  t.same(parseKeeperUri('tradle-keeper://deadbeef/?a=b'), {
+    type: "tradle-keeper",
+    hash: 'deadbeef',
+    a: 'b',
+  }, 'parse with slash before query')
+
+  t.same(parseKeeperUri('tradle-keeper://deadbeef?a=b'), {
+    type: "tradle-keeper",
+    hash: 'deadbeef',
+    a: 'b',
+  }, 'parse with no slash before query')
+
   t.end()
 })

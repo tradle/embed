@@ -240,11 +240,11 @@ const resolveEmbeds = co(function* ({ object, resolve, concurrency=Infinity }) {
 function parseKeeperUri (uri) {
   // parseUrl doesn't work. It cuts off the last character of the hash when parsing
   // hash as hostname
-  const [hash, rest] = uri
+  const [hash, qs=''] = uri
     .slice(PROTOCOL.keeper.length + 2)
-    .split('/')
+    .replace(/\/\?/, '?') // => /? -> ?
+    .split(/[?]/)
 
-  const qs = rest.split('?')[1] || ''
   return {
     type: 'tradle-keeper',
     hash: hash.toLowerCase(),
