@@ -247,14 +247,14 @@ function parseKeeperUri (uri) {
   const qs = rest.split('?')[1] || ''
   return {
     type: 'tradle-keeper',
-    hash,
+    hash: hash.toLowerCase(),
     ...QueryString.parse(qs),
   }
 }
 
 function buildKeeperUri ({ hash, ...details }) {
   const qs = QueryString.stringify(details)
-  return `${PROTOCOL.keeper}//${hash}/?${qs}`
+  return `${PROTOCOL.keeper}//${hash.toLowerCase()}/?${qs}`
 }
 
 function isKeeperUri (uri) {
