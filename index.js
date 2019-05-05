@@ -5,6 +5,7 @@ const co = require('co').wrap
 const IP = require('ip')
 const dotProp = require('dot-prop')
 const traverse = require('traverse')
+const caseless = require('caseless')
 const DataURI = require('strong-data-uri')
 const decodeDataURI = DataURI.decode
 const encodeDataURI = DataURI.encode
@@ -58,7 +59,9 @@ function parseS3Url (url) {
   }
 
   const query = QueryString.parse(parsed.query || '')
-  const presigned = query.Signature || query['X-Amz-Signature']
+  const caselessQuery = caseless(query)
+  const presigned = Boolean(caselessQuery.has('signature') || caselessQuery.has('x-amz-signature'))
+
   // if (parsed.hostname !== 'localhost' && !presigned) {
   //   return
   // }
