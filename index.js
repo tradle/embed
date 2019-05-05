@@ -58,13 +58,7 @@ function parseS3Url (url) {
   }
 
   const query = QueryString.parse(parsed.query || '')
-  const {
-    AWSAccessKeyId,
-    Expires,
-    Signature
-  } = query
-
-  const presigned = AWSAccessKeyId && Expires && Signature
+  const presigned = query.Signature || query['X-Amz-Signature']
   // if (parsed.hostname !== 'localhost' && !presigned) {
   //   return
   // }
