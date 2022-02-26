@@ -91,12 +91,10 @@ function parseS3Url (url) {
     ret.key = match[2]
   } else {
     const { pathname='' } = parsed
-    const match = pathname.match(/^\/?([^/]+)\/(.*)/)
+    const match = pathname.match(/^\/?([^/]+)\/(.+)/)
     if (!match) return
 
     const [bucket, key] = match.slice(1)
-    if (!(bucket && key)) return
-
     ret.bucket = bucket
     ret.key = key
   }
