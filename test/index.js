@@ -1,19 +1,14 @@
 const test = require('tape')
 const QueryString = require('querystring')
 const {
-  parseS3Url,
   isKeeperUri,
   buildKeeperUri,
   parseKeeperUri,
   getS3UrlForKeeperUri,
-  getS3Endpoint,
   replaceKeeperUris,
   replaceDataUrls,
-  getEmbeds,
   resolveEmbeds,
-  getUnsignedEmbeds,
-  encodeDataURI,
-  decodeDataURI,
+  getEmbeds,
   PREFIX,
   PROTOCOL,
   stripEmbedPrefix,
@@ -158,6 +153,53 @@ test('stripEmbedPrefix', function (t) {
     }
   })
 
+  t.end()
+})
+
+test('resolveEmbeds', async t => {
+  const bucket = 'mybucket'
+  const host = `${bucket}.s3.amazonaws.com`
+  const hostUrl = `https://${host}`
+  t.deepEqual(
+    await resolveEmbeds({
+      object: {
+        a: 'https://unprefixed'
+      },
+      async resolve(input) {
+        t.fail(input)
+      }
+    }),
+    {
+      a: 'https://unprefixed'
+    }
+  )
+  let count = 0
+  t.deepEqual(
+    await resolveEmbeds({
+      object: {
+        a: `${PREFIX.unsigned}${hostUrl}/a`,
+        b: `${PREFIX.unsigned}${hostUrl}/b`
+      },
+      async resolve (input) {
+        const key = count === 0 ? 'a' : 'b'
+        t.deepEqual(input, {
+          url: `${hostUrl}/${key}`,
+          query: {},
+          host,
+          bucket,
+          key,
+          value: `u:s3:${hostUrl}/${key}`,
+          path: key
+        })
+        count++
+        return input.path
+      }
+    }),
+    {
+      a: 'data:text/plain;charset=UTF-8;base64,YQ==',
+      b: 'data:text/plain;charset=UTF-8;base64,Yg=='
+    }
+  )
   t.end()
 })
 
