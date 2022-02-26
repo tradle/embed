@@ -12,6 +12,7 @@ const {
   PREFIX,
   PROTOCOL,
   stripEmbedPrefix,
+  presignUrls,
 } = require('../')
 
 test('replace data urls', function (t) {
@@ -135,21 +136,13 @@ test('stripEmbedPrefix', function (t) {
   const hash = 'abc'
   t.same(stripEmbedPrefix({
     a: {
-      b: {
-        c: `${PREFIX.unsigned}https://${bucket}.s3.amazonaws.com/${keyPrefix}${hash}`
-      },
-      d: {
-        e: `${PREFIX.presigned}https://${bucket}.s3.amazonaws.com/${keyPrefix}${hash}`
-      }
+      b: { c: `${PREFIX.unsigned}https://${bucket}.s3.amazonaws.com/${keyPrefix}${hash}` },
+      d: { e: `${PREFIX.presigned}https://${bucket}.s3.amazonaws.com/${keyPrefix}${hash}` }
     }
   }), {
     a: {
-      b: {
-        c: `https://${bucket}.s3.amazonaws.com/${keyPrefix}${hash}`,
-      },
-      d: {
-        e: `https://${bucket}.s3.amazonaws.com/${keyPrefix}${hash}`,
-      }
+      b: { c: `https://${bucket}.s3.amazonaws.com/${keyPrefix}${hash}` },
+      d: { e: `https://${bucket}.s3.amazonaws.com/${keyPrefix}${hash}` }
     }
   })
 
@@ -200,6 +193,31 @@ test('resolveEmbeds', async t => {
       b: 'data:text/plain;charset=UTF-8;base64,Yg=='
     }
   )
+  t.end()
+})
+
+test('presignUrls', t => {
+  const unprefixed = 'https://unprefixed'
+  t.deepEqual(presignUrls({
+    object: { unprefixed },
+    sign(input) {
+      t.fail(input)
+    }
+  }), { unprefixed })
+  const bucket = 'mybucket'
+  const host = `${bucket}.s3.amazonaws.com`
+  const hostUrl = `https://${host}`
+  t.deepEqual(presignUrls({
+    object: { foo: `${PREFIX.unsigned}${hostUrl}/bar` },
+    sign (input) {
+      t.deepEqual(input, {
+        bucket: 'mybucket',
+        key: 'bar',
+        path: 'foo'
+      })
+      return 'baz'
+    }
+  }), { foo: 'p:s3:baz' })
   t.end()
 })
 
