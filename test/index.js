@@ -47,7 +47,7 @@ test('replace data urls', function (t) {
     {
       "dataUrl": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD",
       "hash": `${hash1}`,
-      "body": new Buffer('ffd8ffe000104a46494600010100000100010000', 'hex'),
+      "body": Buffer.from('ffd8ffe000104a46494600010100000100010000', 'hex'),
       "host": "mybucket.s3.amazonaws.com",
       "mimetype": "image/jpeg",
       "path": "object.blah.habla.0.photo",
@@ -58,7 +58,7 @@ test('replace data urls', function (t) {
     {
       "dataUrl": "data:image/jpeg;base64,/8j/4AAQSkZJRgABAQAAAQABAAD",
       "hash": `${hash2}`,
-      "body": new Buffer('ffc8ffe000104a46494600010100000100010000', 'hex'),
+      "body": Buffer.from('ffc8ffe000104a46494600010100000100010000', 'hex'),
       "host": "mybucket.s3.amazonaws.com",
       "mimetype": "image/jpeg",
       "path": "object.gooblae",
