@@ -71,7 +71,7 @@ function parseS3Url (url) {
     return
   }
 
-  const query = QueryString.parse(parsed.query || '')
+  const query = {...QueryString.parse(parsed.query || '')}
   const caselessQuery = caseless(query)
   const presigned = Boolean(caselessQuery.has('signature') || caselessQuery.has('x-amz-signature'))
 
