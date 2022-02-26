@@ -13,7 +13,85 @@ const {
   PROTOCOL,
   stripEmbedPrefix,
   presignUrls,
+  getS3UploadTarget,
+  parseS3Url,
+  getS3Endpoint,
+  encodeDataURI,
+  decodeDataURI,
+  isPrivateEndpoint,
+  parseEmbeddedValue,
 } = require('../')
+
+test('isPrivateEndpoint', t => {
+  t.equals(isPrivateEndpoint(''), false)
+  t.equals(isPrivateEndpoint('localhost'), true)
+  t.equals(isPrivateEndpoint('https://localhost'), true)
+  t.equals(isPrivateEndpoint('10.10.10.10'), true)
+  // TODO: Bug?
+  t.equals(isPrivateEndpoint('::1'), false)
+  t.end()
+})
+
+test('dataURI - only API availability', t => {
+  const dataURI = 'data:application/octet-stream;base64,AA=='
+  t.equals(encodeDataURI(Buffer.alloc(1)), dataURI)
+  t.deepEqual(decodeDataURI(dataURI), Buffer.alloc(1))
+  t.end()
+})
+
+test('parseEmbeddedValue', t => {
+  t.same(parseEmbeddedValue.call({ isLeaf: false }, 'hello'), undefined)
+  t.same(parseEmbeddedValue.call({ isLeaf: false }, 1), undefined)
+  t.same(parseEmbeddedValue.call({ isLeaf: true }, 'hello'), undefined)
+  const host = 'foo'
+  const bucket = 'bar'
+  const key = 'baz/bak'
+  const url = `https://${host}/${bucket}/${key}?q=hello&q=world`
+  t.deepEqual(
+    parseEmbeddedValue.call({ isLeaf: true, path: ['xyz', 'abc'] }, `${PREFIX.presigned}${url}`),
+    { url, query: { q: [ 'hello', 'world' ] }, host, bucket, key, value: `p:s3:${url}`, path: 'xyz.abc' }
+  )
+  t.deepEqual(
+    parseEmbeddedValue.call({ isLeaf: true, path: ['xyz', 'abc'] }, `${PREFIX.unsigned}${url}`),
+    { url, query: { q: [ 'hello', 'world' ] }, host, bucket, key, value: `u:s3:${url}`, path: 'xyz.abc' }
+  )
+  t.end()
+})
+
+test('parseS3Url', t => {
+  const host = 'foo'
+  const bucket = 'bar'
+  const key = 'baz/bak'
+  const url = `https://${host}/${bucket}/${key}?q=hello&q=world`
+  t.same(parseS3Url(null), undefined)
+  t.deepEqual(parseS3Url(url), {
+    url,
+    query: {
+      q: ['hello', 'world']
+    },
+    host,
+    bucket,
+    key
+  })
+  t.same(parseS3Url('https://foo/bar/'), undefined)
+  t.same(parseS3Url('https://foo/bar'), undefined)
+  t.end()
+})
+
+test('getS3UploadTarget', t => {
+  t.throws(() => getS3UploadTarget({ bucket: null}))
+  t.deepEqual(
+    getS3UploadTarget({ endpoint: 'localhost', key: 'foo', bucket: 'bar' }),
+    { host: 'localhost', s3Url: 'http://localhost/bar/foo' }
+  )
+  t.end()
+})
+
+test('getS3Endpoint', t => {
+  t.equal(getS3Endpoint(''), 's3.amazonaws.com')
+  t.equal(getS3Endpoint('us-west-1'), 's3-us-west-1.amazonaws.com')
+  t.end()
+})
 
 test('replace data urls', function (t) {
   const bucket = 'mybucket'
@@ -23,6 +101,8 @@ test('replace data urls', function (t) {
       blah: {
         habla: [{
           photo: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD"
+        }, {
+          photo: "data:"
         }]
       },
       gooblae: "data:image/jpeg;base64,/8j/4AAQSkZJRgABAQAAAQABAAD"
