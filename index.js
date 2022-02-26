@@ -1,7 +1,7 @@
 const crypto = require('crypto')
 const parseUrl = require('url').parse
+const pMap = import('p-map')
 const QueryString = require('querystring')
-const co = require('co').wrap
 const IP = require('ip')
 const dotProp = require('dot-prop')
 const traverse = require('traverse')
@@ -201,11 +201,11 @@ function replaceDataUrls ({
   }, [])
 }
 
-const resolveEmbeds = co(function* ({ object, resolve, concurrency=Infinity }) {
+async function resolveEmbeds ({ object, resolve, concurrency=Infinity }) {
   const embeds = getEmbeds(object)
   if (!embeds.length) return object
 
-  const values = yield Promise.all(embeds.map(embed => resolve(embed), { concurrency }))
+  const values = await (await pMap).default(map, embed => resolve(embed), { concurrency })
   embeds.forEach(({ path }, i) => {
     const value = values[i]
     const dataUri = encodeDataURI(value, value.mimetype)
@@ -213,7 +213,7 @@ const resolveEmbeds = co(function* ({ object, resolve, concurrency=Infinity }) {
   })
 
   return object
-})
+}
 
 // function replaceEmbeds (object, fn) {
 //   const promises = []
