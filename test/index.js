@@ -69,6 +69,8 @@ test('replace data urls', function (t) {
       blah: {
         habla: [{
           photo
+        }, {
+          photo: 'data:'
         }]
       },
       gooblae
