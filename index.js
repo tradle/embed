@@ -66,6 +66,7 @@ function parseS3Url (url) {
   let parsed
   try {
     parsed = parseUrl(url)
+    /* c8 ignore next 3 */
   } catch (err) {
     return
   }
