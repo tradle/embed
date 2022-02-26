@@ -62,10 +62,6 @@ function parseS3Url (url) {
   const caselessQuery = caseless(query)
   const presigned = Boolean(caselessQuery.has('signature') || caselessQuery.has('x-amz-signature'))
 
-  // if (parsed.hostname !== 'localhost' && !presigned) {
-  //   return
-  // }
-
   const ret = {
     url,
     query,
@@ -93,14 +89,6 @@ function parseS3Url (url) {
   }
 
   return ret
-  // return {
-  //   url,
-  //   host: parsed.host,
-  //   query,
-  //   bucket,
-  //   key,
-  //   presigned: !!presigned
-  // }
 }
 
 function sha256 (strOrBuffer) {
@@ -215,25 +203,6 @@ async function resolveEmbeds ({ object, resolve, concurrency=Infinity }) {
   return object
 }
 
-// function replaceEmbeds (object, fn) {
-//   const promises = []
-//   return new Promise((resolve, reject) => {
-//     traverse(object).reduce(function (embeds, value) {
-//       const embed = parseEmbeddedValue.call(this, value)
-//       const replacement = fn(embed)
-//       if (isPromise(replacement)) {
-//         promises.push(
-//           replacement.then(result => this.update(result))
-//         )
-//       } else {
-//         this.update(replacement)
-//       }
-//     })
-
-//     Promise.all(promises).then(() => resolve(object), reject)
-//   })
-// }
-
 function parseKeeperUri (uri) {
   // parseUrl doesn't work. It cuts off the last character of the hash when parsing
   // hash as hostname
@@ -264,7 +233,6 @@ function parseEmbeddedValue (value) {
   }
 
   let prefix
-  let presigned
   if (value.startsWith(PREFIX.presigned)) {
     prefix = PREFIX.presigned
   } else if (value.startsWith(PREFIX.unsigned)) {
@@ -300,10 +268,6 @@ function presignUrls ({ object, sign }) {
   })
 
   return object
-}
-
-function isPromise (obj) {
-  return obj && typeof obj.then === 'function'
 }
 
 function isPrivateEndpoint (endpoint) {
@@ -354,12 +318,11 @@ function getS3UrlForKeeperUri ({
   return s3Url
 }
 
-const utils = module.exports = {
+module.exports = {
   parseS3Url,
   getS3Endpoint,
   replaceDataUrls,
   presignUrls,
-  // replaceEmbeds,
   resolveEmbeds,
   getEmbeds,
   encodeDataURI,
