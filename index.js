@@ -205,7 +205,7 @@ async function resolveEmbeds ({ object, resolve, concurrency=Infinity }) {
   const embeds = getEmbeds(object)
   if (!embeds.length) return object
 
-  const values = await (await pMap).default(map, embed => resolve(embed), { concurrency })
+  const values = await (await pMap).default(embeds, embed => resolve(embed), { concurrency })
   embeds.forEach(({ path }, i) => {
     const value = values[i]
     const dataUri = encodeDataURI(value, value.mimetype)
