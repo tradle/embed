@@ -1,6 +1,6 @@
-const test = require('tape')
-const QueryString = require('querystring')
-const {
+import test = require('fresh-tape')
+import QueryString = require('querystring')
+import {
   isKeeperUri,
   buildKeeperUri,
   parseKeeperUri,
@@ -19,8 +19,12 @@ const {
   encodeDataURI,
   decodeDataURI,
   isPrivateEndpoint,
-  parseEmbeddedValue,
-} = require('../')
+  parseEmbeddedValue
+} from '../src'
+import type {
+  S3Target,
+  DataURI
+} from '../src/types'
 
 test('isPrivateEndpoint', t => {
   t.equals(isPrivateEndpoint(''), false)
@@ -40,20 +44,22 @@ test('dataURI - only API availability', t => {
 })
 
 test('parseEmbeddedValue', t => {
-  t.same(parseEmbeddedValue.call({ isLeaf: false }, 'hello'), undefined)
-  t.same(parseEmbeddedValue.call({ isLeaf: false }, 1), undefined)
-  t.same(parseEmbeddedValue.call({ isLeaf: true }, 'hello'), undefined)
+  t.same(parseEmbeddedValue.call({ isLeaf: false, path: [] }, 'hello'), undefined)
+  t.same(parseEmbeddedValue.call({ isLeaf: false, path: [] }, 1 as unknown as string), undefined)
+  t.same(parseEmbeddedValue.call({ isLeaf: true, path: [] }, 'hello'), undefined)
+  t.same(parseEmbeddedValue.call({ isLeaf: true, path: [] }, 'hello'), undefined)
+  t.same(parseEmbeddedValue.call({ isLeaf: true, path: [] }, `${PREFIX.unsigned}`), undefined)
   const host = 'foo'
   const bucket = 'bar'
   const key = 'baz/bak'
   const url = `https://${host}/${bucket}/${key}?q=hello&q=world`
   t.deepEqual(
     parseEmbeddedValue.call({ isLeaf: true, path: ['xyz', 'abc'] }, `${PREFIX.presigned}${url}`),
-    { url, query: { q: [ 'hello', 'world' ] }, host, bucket, key, value: `p:s3:${url}`, path: 'xyz.abc' }
+    { url, query: { q: ['hello', 'world'] }, host, bucket, key, value: `p:s3:${url}`, path: 'xyz.abc' }
   )
   t.deepEqual(
     parseEmbeddedValue.call({ isLeaf: true, path: ['xyz', 'abc'] }, `${PREFIX.unsigned}${url}`),
-    { url, query: { q: [ 'hello', 'world' ] }, host, bucket, key, value: `u:s3:${url}`, path: 'xyz.abc' }
+    { url, query: { q: ['hello', 'world'] }, host, bucket, key, value: `u:s3:${url}`, path: 'xyz.abc' }
   )
   t.end()
 })
@@ -63,7 +69,7 @@ test('parseS3Url', t => {
   const bucket = 'bar'
   const key = 'baz/bak'
   const url = `https://${host}/${bucket}/${key}?q=hello&q=world`
-  t.same(parseS3Url(null), undefined)
+  t.same(parseS3Url(null as unknown as string), undefined)
   t.deepEqual(parseS3Url(url), {
     url,
     query: {
@@ -79,7 +85,8 @@ test('parseS3Url', t => {
 })
 
 test('getS3UploadTarget', t => {
-  t.throws(() => getS3UploadTarget({ bucket: null}))
+  /* eslint-disable-next-line @typescript-eslint/consistent-type-assertions */
+  t.throws(() => getS3UploadTarget({ bucket: null as unknown as string } as S3Target))
   t.deepEqual(
     getS3UploadTarget({ endpoint: 'localhost', key: 'foo', bucket: 'bar' }),
     { host: 'localhost', s3Url: 'http://localhost/bar/foo' }
@@ -100,12 +107,12 @@ test('replace data urls', function (t) {
     object: {
       blah: {
         habla: [{
-          photo: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD"
+          photo: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD'
         }, {
-          photo: "data:"
+          photo: 'data:'
         }]
       },
-      gooblae: "data:image/jpeg;base64,/8j/4AAQSkZJRgABAQAAAQABAAD"
+      gooblae: 'data:image/jpeg;base64,/8j/4AAQSkZJRgABAQAAAQABAAD'
     }
   }
 
@@ -121,26 +128,26 @@ test('replace data urls', function (t) {
 
   t.same(dataUrls, [
     {
-      "dataUrl": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD",
-      "hash": `${hash1}`,
-      "body": Buffer.from('ffd8ffe000104a46494600010100000100010000', 'hex'),
-      "host": "mybucket.s3.amazonaws.com",
-      "mimetype": "image/jpeg",
-      "path": "object.blah.habla.0.photo",
-      "s3Url": `https://mybucket.s3.amazonaws.com/${keyPrefix}${hash1}`,
-      "bucket": "mybucket",
-      "key": `${keyPrefix}${hash1}`
+      dataUrl: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD',
+      hash: `${hash1}`,
+      body: Buffer.from('ffd8ffe000104a46494600010100000100010000', 'hex'),
+      host: 'mybucket.s3.amazonaws.com',
+      mimetype: 'image/jpeg',
+      path: 'object.blah.habla.0.photo',
+      s3Url: `https://mybucket.s3.amazonaws.com/${keyPrefix}${hash1}`,
+      bucket: 'mybucket',
+      key: `${keyPrefix}${hash1}`
     },
     {
-      "dataUrl": "data:image/jpeg;base64,/8j/4AAQSkZJRgABAQAAAQABAAD",
-      "hash": `${hash2}`,
-      "body": Buffer.from('ffc8ffe000104a46494600010100000100010000', 'hex'),
-      "host": "mybucket.s3.amazonaws.com",
-      "mimetype": "image/jpeg",
-      "path": "object.gooblae",
-      "s3Url": `https://mybucket.s3.amazonaws.com/${keyPrefix}${hash2}`,
+      dataUrl: 'data:image/jpeg;base64,/8j/4AAQSkZJRgABAQAAAQABAAD',
+      hash: `${hash2}`,
+      body: Buffer.from('ffc8ffe000104a46494600010100000100010000', 'hex'),
+      host: 'mybucket.s3.amazonaws.com',
+      mimetype: 'image/jpeg',
+      path: 'object.gooblae',
+      s3Url: `https://mybucket.s3.amazonaws.com/${keyPrefix}${hash2}`,
       bucket,
-      "key": `${keyPrefix}${hash2}`
+      key: `${keyPrefix}${hash2}`
     }
   ])
 
@@ -165,7 +172,7 @@ test('replace data urls', function (t) {
       query: {},
       bucket,
       key: `${keyPrefix}${hash1}`,
-      path: "object.blah.habla.0.photo",
+      path: 'object.blah.habla.0.photo',
       value: `${PREFIX.unsigned}https://${bucket}.s3.amazonaws.com/${keyPrefix}${hash1}`
     },
     {
@@ -174,7 +181,7 @@ test('replace data urls', function (t) {
       query: {},
       bucket,
       key: `${keyPrefix}${hash2}`,
-      path: "object.gooblae",
+      path: 'object.gooblae',
       value: `${PREFIX.unsigned}https://${bucket}.s3.amazonaws.com/${keyPrefix}${hash2}`
     }
   ])
@@ -190,7 +197,7 @@ test('replace data urls', function (t) {
       host: `${bucket}.s3.amazonaws.com`,
       bucket,
       key: `${keyPrefix}${hash1}`,
-      path: "object.blah.habla.0.photo",
+      path: 'object.blah.habla.0.photo',
       value: `${PREFIX.unsigned}https://${bucket}.s3.amazonaws.com/${keyPrefix}${hash1}`
     },
     {
@@ -204,7 +211,7 @@ test('replace data urls', function (t) {
       presigned: true,
       bucket,
       key: `${keyPrefix}${hash2}`,
-      path: "object.gooblae",
+      path: 'object.gooblae',
       value: message.object.gooblae
     }
   ])
@@ -240,8 +247,10 @@ test('resolveEmbeds', async t => {
       object: {
         a: 'https://unprefixed'
       },
-      async resolve(input) {
-        t.fail(input)
+      async resolve (input) {
+        t.fail(String(input))
+        /* eslint-disable-next-line @typescript-eslint/consistent-type-assertions */
+        return {} as DataURI
       }
     }),
     {
@@ -267,12 +276,16 @@ test('resolveEmbeds', async t => {
           path: key
         })
         count++
-        return input.path
+        const result = Buffer.from(input.path) as DataURI
+        result.mediatype = 'baz'
+        result.charset = null
+        result.mimetype = 'foo/bar'
+        return result
       }
     }),
     {
-      a: 'data:text/plain;charset=UTF-8;base64,YQ==',
-      b: 'data:text/plain;charset=UTF-8;base64,Yg=='
+      a: 'data:foo/bar;base64,YQ==',
+      b: 'data:foo/bar;base64,Yg=='
     }
   )
   t.end()
@@ -282,8 +295,9 @@ test('presignUrls', t => {
   const unprefixed = 'https://unprefixed'
   t.deepEqual(presignUrls({
     object: { unprefixed },
-    sign(input) {
-      t.fail(input)
+    sign (input) {
+      t.fail(String(input))
+      return ''
     }
   }), { unprefixed })
   const bucket = 'mybucket'
@@ -307,16 +321,18 @@ test('build/parse/is/replaceKeeperUris', t => {
   const hash = 'deadbeef'
   const mimetype = 'image/jpeg'
   const algorithm = 'sha256'
-  const qs = QueryString.stringify({ algorithm, mimetype })
+  const qs = QueryString.stringify({ algorithm, mimetype, customArray: ['a', 'b'], customEmpty: '' })
   const keeperUri = `${PROTOCOL.keeper}//${hash}/?${qs}`
   t.equal(isKeeperUri(keeperUri), true)
   t.equal(isKeeperUri('https://keeper.com'), false)
-  t.same(keeperUri, buildKeeperUri({ hash, algorithm, mimetype }))
+  t.same(buildKeeperUri({ hash, algorithm, mimetype }), `${PROTOCOL.keeper}//${hash}/?${QueryString.stringify({ algorithm, mimetype })}`)
   t.same(parseKeeperUri(keeperUri), {
     type: 'tradle-keeper',
     hash,
     algorithm,
     mimetype,
+    customArray: 'a',
+    customEmpty: ''
   })
 
   const region = 'us-west-2'
@@ -325,13 +341,13 @@ test('build/parse/is/replaceKeeperUris', t => {
   const commonOpts = {
     keyPrefix,
     region,
-    bucket,
+    bucket
   }
 
   t.equal(getS3UrlForKeeperUri({
     ...commonOpts,
-    uri: keeperUri,
-  }), 'https://abc.def.s3-us-west-2.amazonaws.com/bloob/deadbeef');
+    uri: keeperUri
+  }), 'https://abc.def.s3-us-west-2.amazonaws.com/bloob/deadbeef')
 
   const message = {
     object: {
@@ -340,7 +356,7 @@ test('build/parse/is/replaceKeeperUris', t => {
           photo: keeperUri
         }]
       },
-      gooblae: "data:image/jpeg;base64,/8j/4AAQSkZJRgABAQAAAQABAAD"
+      gooblae: 'data:image/jpeg;base64,/8j/4AAQSkZJRgABAQAAAQABAAD'
     }
   }
 
@@ -349,7 +365,7 @@ test('build/parse/is/replaceKeeperUris', t => {
     object: message
   }), [
     {
-      type: "tradle-keeper",
+      type: 'tradle-keeper',
       hash,
       algorithm,
       mimetype,
@@ -357,20 +373,22 @@ test('build/parse/is/replaceKeeperUris', t => {
       path: 'object.blah.habla.0.photo',
       s3Url: `https://${bucket}.s3-us-west-2.amazonaws.com/${keyPrefix}${hash}`,
       bucket,
-      key: `${keyPrefix}${hash}`
+      key: `${keyPrefix}${hash}`,
+      customArray: 'a',
+      customEmpty: ''
     }
   ])
 
   t.same(parseKeeperUri('tradle-keeper://deadbeef/?a=b'), {
-    type: "tradle-keeper",
+    type: 'tradle-keeper',
     hash: 'deadbeef',
-    a: 'b',
+    a: 'b'
   }, 'parse with slash before query')
 
   t.same(parseKeeperUri('tradle-keeper://deadbeef?a=b'), {
-    type: "tradle-keeper",
+    type: 'tradle-keeper',
     hash: 'deadbeef',
-    a: 'b',
+    a: 'b'
   }, 'parse with no slash before query')
 
   t.end()

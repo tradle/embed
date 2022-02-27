@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "strictNullChecks": true,
+    "target": "ES2020",
+    "module": "CommonJS",
+    "declaration": true,
+    "noUnusedLocals": true,
+    "sourceMap": true,
+    "noUncheckedIndexedAccess": true,
+    "noUnusedParameters": true,
+    "outDir": "cjs"
+  }
+}
