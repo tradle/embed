@@ -79,7 +79,7 @@ export function parseS3Url (url: string): S3Location | undefined {
   const s3Location: S3Location = {
     url,
     query,
-    host: parsed.host,
+    host: parsed.host === undefined || parsed.host === null ? null : parsed.host,
     bucket: match[1],
     key: match[2]
   }
@@ -232,7 +232,9 @@ export function parseKeeperUri (uri: string): KeeperURI {
 
 export function buildKeeperUri ({ hash, ...details }: {
   hash: string
-} & QueryString.ParsedUrlQueryInput): string {
+  // QueryString.ParsedUrlQueryInput
+  [key: string]: string | number | boolean | ReadonlyArray<string | number | boolean> | null | undefined
+}): string {
   const qs = QueryString.stringify(details)
   return `${PROTOCOL.keeper}//${hash.toLowerCase()}/?${qs}`
 }
