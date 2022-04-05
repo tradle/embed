@@ -21,7 +21,7 @@ import {
   isPrivateEndpoint,
   parseEmbeddedValue
 } from '../src'
-import type {
+import {
   S3Target,
   DataURI
 } from '../src/types'

@@ -1,4 +1,4 @@
-import type { DataURI } from 'strong-data-uri'
+import { DataURI } from 'strong-data-uri'
 export { DataURI }
 
 export const DEFAULT_REGION = 'us-east-1'

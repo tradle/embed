@@ -7,11 +7,10 @@ import dotProp = require('dot-prop')
 import caseless = require('caseless')
 import traverse = require('traverse')
 import strongDataURI = require('strong-data-uri')
-import { DEFAULT_REGION, S3_ENDPOINTS } from './types'
-import type {
+import {
   KnownRegions, S3Location, Embed, ReplacedKeeperURI,
   Replacement, ReplaceOptions, DataURI, S3UploadTarget,
-  KeeperURI, PresignOptions, S3Target
+  KeeperURI, PresignOptions, S3Target, DEFAULT_REGION, S3_ENDPOINTS
 } from './types'
 
 export * from './types'
