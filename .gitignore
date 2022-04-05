@@ -3,3 +3,4 @@ npm-debug.log
 coverage
 *.tgz
 cjs
+package-lock.json
